@@ -1,0 +1,22 @@
+.
+.gitignore
+PAGE_FLOW.md
+PROJECT_STRUCTURE.txt
+QUICKSTART.md
+README.md
+package.json
+public
+│   ├── index.html
+src
+│   ├── App.css
+│   ├── App.jsx
+│   ├── index.css
+│   ├── index.js
+│   ├── pages
+│   │   ├── ForgotPassword.jsx
+│   │   ├── Login.jsx
+│   │   ├── ResetPassword.jsx
+│   │   ├── UserRegistration.jsx
+│   │   ├── VerifyCode.jsx
+│   ├── services
+│   │   ├── api.js

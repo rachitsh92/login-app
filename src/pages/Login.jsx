@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { loginUser } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { loginUser, acceptLoginChallenge } from '../services/api';
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const loginChallenge = searchParams.get('login_challenge');
+  
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -11,6 +14,15 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    // If no login_challenge, redirect to landing
+    if (!loginChallenge) {
+      console.warn('No login_challenge found, redirecting to landing');
+      // Uncomment in production:
+      // navigate('/');
+    }
+  }, [loginChallenge, navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -26,15 +38,25 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await loginUser(formData.username, formData.password);
-      console.log('Login successful:', response);
+      // Step 1: Authenticate user with your backend
+      const authResponse = await loginUser(formData.username, formData.password);
+      console.log('Authentication successful:', authResponse);
       
-      // Store token (example)
-      localStorage.setItem('authToken', response.token);
+      // Step 2: Accept the Hydra login challenge
+      const acceptResponse = await acceptLoginChallenge(loginChallenge, {
+        subject: authResponse.user.id || formData.username,
+        remember: true,
+        remember_for: 3600
+      });
       
-      // Redirect to dashboard or home page
-      alert('Login successful! Redirecting...');
-      // navigate('/dashboard');
+      console.log('Login challenge accepted:', acceptResponse);
+      
+      // Step 3: Redirect to Hydra's redirect_to URL
+      if (acceptResponse.redirect_to) {
+        window.location.href = acceptResponse.redirect_to;
+      } else {
+        setError('No redirect URL received from authorization server');
+      }
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
@@ -59,6 +81,12 @@ const Login = () => {
         </div>
 
         {error && <div className="error-message">{error}</div>}
+
+        {loginChallenge && (
+          <div className="info-text" style={{ fontSize: '12px', color: '#666' }}>
+            Challenge: {loginChallenge.substring(0, 20)}...
+          </div>
+        )}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
